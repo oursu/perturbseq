@@ -81,6 +81,7 @@ todo_include_todos = False
 
 ######### mine
 .. automodule:: io
+   :members:
 
 # -- Options for HTML output ----------------------------------------------
 
