@@ -22,5 +22,5 @@ Preprocessing: `pp`
 .. autosummary::
    :toctree: .
 
-   pp.cells_per_perturbation
+   perturb.pp.cells_per_perturbation
 
