@@ -1,0 +1,145 @@
+
+def read_perturbations_csv(adata_here,cell2guide_csv,guide2gene_csv=None,pref='perturb',
+                           sep='\t',copy=False):
+    
+    import pandas as pd
+
+    if copy: adata_here = adata_here.copy()
+    
+    #read cell2guide
+    cell2guide=pd.read_csv(cell2guide_csv,sep=sep)
+    cell2guide.index=cell2guide['cell']
+        
+    #check that the annotated cells have a good overlap with the adata
+    cells_annotated=list(set(cell2guide['cell']))
+    cells_annotated_in_adata=list(set(cells_annotated).intersection(set(adata_here.obs_names)))
+    percent_cells_annotated_in_adata=100*round(len(cells_annotated_in_adata)/adata_here.n_obs,2)
+    print('adata cells:',adata_here.n_obs)
+    print('annotated cells:',len(cells_annotated),' of which ',percent_cells_annotated_in_adata,'percent in adata')
+    
+    #assign the guides to the cells in adata
+    guides=list(set(cell2guide.columns).difference(set(['cell'])))
+    cell2guide_for_adata=pd.DataFrame(0.0,
+                      index=adata_here.obs_names,
+                      columns=guides)
+    cell2guide_for_adata.loc[cells_annotated_in_adata,guides]=cell2guide.loc[cells_annotated_in_adata,guides]
+    
+    #if provided a guide->gene file, save that in the adata object, as another obsm
+    if guide2gene_csv!=None:
+        guide2gene=pd.read_csv(guide2gene_csv,sep=sep)
+        genes=list(set(guide2gene['gene']))
+        cell2gene_for_adata=pd.DataFrame(0.0,
+                      index=adata_here.obs_names,
+                      columns=genes)
+        #for each gene, check if at least one of the guides is present
+        for gene in genes:
+            guides_per_gene_init=list(guide2gene.loc[guide2gene['gene']==gene,'guide'])
+            guides_per_gene=list(set(guides_per_gene_init).intersection(set(guides)))
+            if len(guides_per_gene)>0:
+                cell2gene_for_adata.loc[cells_annotated_in_adata,gene]=cell2guide_for_adata.loc[cells_annotated_in_adata,guides_per_gene].sum(axis=1)
+    
+    adata_here.obsm[pref+'.cell2guide']=cell2guide_for_adata
+    adata_here.obsm[pref+'.cell2gene']=cell2gene_for_adata
+    if copy:
+        return(adata_here)
+
+
+def perturb2obs(adata_here,pref='perturb',copy=False):
+    if pref+'.cell2guide' not in adata_here.obsm:
+        print(pref+'.cell2guide'+' was not found in adata.obsm. Please first run perturb.read_perturbations_csv')
+        exit
+    else:
+        if copy: adata_here = adata_here.copy()
+
+        #go through each cell and make 2 obs.
+        #1. the guide combination in the cell
+        #2. annotate cells with multiple guides just as multiple
+        anno_total_guide=[]
+        anno_singles_guide=[]
+        cell2guide=adata_here.obsm[pref+'.cell2guide']
+        if pref+'.cell2gene' in adata_here.obsm:
+            cell2gene=adata_here.obsm[pref+'.cell2gene']
+            anno_total_gene=[]
+            anno_singles_gene=[]
+        for i in range(adata_here.n_obs):
+            cell=adata_here.obs_names[i]
+            
+            #get the guides
+            guides_in_cell=sorted(list(cell2guide.loc[cell,cell2guide.loc[cell,:]>0].index))
+            if len(guides_in_cell)==0:
+                anno_singles_here='unperturbed'
+                anno_total_here='unperturbed'
+            elif len(guides_in_cell)==1:
+                anno_singles_here=guides_in_cell[0]
+                anno_total_here=guides_in_cell[0]
+            elif len(guides_in_cell)>1:
+                anno_singles_here='multiple'
+                anno_total_here=','.join(guides_in_cell)
+            else:
+                print('Negative number of guides for cell',cell)
+                
+            anno_total_guide.append(anno_total_here)
+            anno_singles_guide.append(anno_singles_here)
+            
+            #get the genes
+            genes_in_cell=sorted(list(cell2gene.loc[cell,cell2gene.loc[cell,:]>0].index))
+            if len(genes_in_cell)==0:
+                anno_singles_here_gene='unperturbed'
+                anno_total_here_gene='unperturbed'
+            elif len(genes_in_cell)==1:
+                anno_singles_here_gene=genes_in_cell[0]
+                anno_total_here_gene=genes_in_cell[0]
+            elif len(genes_in_cell)>1:
+                anno_singles_here_gene='multiple'
+                anno_total_here_gene=','.join(genes_in_cell)
+            else:
+                print('Negative number of guides for cell',cell)
+                
+            anno_total_gene.append(anno_total_here_gene)
+            anno_singles_gene.append(anno_singles_here_gene)
+        
+        
+        adata_here.obs[pref+'.guide.total']=anno_total_guide
+        adata_here.obs[pref+'.guide']=anno_singles_guide
+        adata_here.obs[pref+'.gene.total']=anno_total_gene
+        adata_here.obs[pref+'.gene']=anno_singles_gene
+        if copy:
+            return(adata_here)
+                
+
+def annotate_controls(adata_here,control_guides=['unperturbed'],pref='perturb',copy=False):
+    #if no controls are specified, unperturbed is the control
+    
+    if copy: adata_here = adata_here.copy()
+
+    if pref+'.guide.total' not in adata_here.obs:
+        print(pref+pref+'.guide.total'+' was not found in adata.obs. Please first run perturb.perturb2obs')
+        exit
+        
+    control_anno=[]
+    for i in range(adata_here.n_obs):
+        guide=adata_here.obs[pref+'.guide.total'][i]
+        if guide in control_guides:
+            control_status='control'
+        else:
+            control_status='not control'
+        control_anno.append(control_status)
+        
+    adata_here.obs[pref+'.control']=control_anno
+
+    if copy:
+        return(adata_here)
+
+def remove_guides_from_gene_names(adata_here,pref='perturb'):
+    if pref+'.cell2guide' not in adata_here.obsm:
+        print(pref+'.cell2guide'+' was not found in adata.obsm. Please first run perturb.read_perturbations_csv')
+        exit
+    guides=adata_here.obsm[pref+'.cell2guide'].columns
+    guides_in_adata_varnames=list(set(adata_here.var_names).intersection(set(guides)))
+    print('filtering out',len(guides_in_adata_varnames),'guide names from the expression matrix')
+    if len(guides_in_adata_varnames)>0:
+        remaining_varnames=list(set(adata_here.var_names).difference(set(guides_in_adata_varnames)))
+        adata_out=adata_here[:,remaining_varnames]
+    else:
+        adata_out=adata_here
+    return(adata_out)
