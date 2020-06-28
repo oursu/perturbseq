@@ -3,15 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Test text
 
 
-
-Welcome to perturbseq's documentation!
+Perturbseq analysis package
 ======================================
 
+Welcome!
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    API/index
