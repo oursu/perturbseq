@@ -16,7 +16,14 @@ Welcome!
 
    API/index
 
+API
+===
 
+Preprocessing: `pp`
+-------------------
+
+Tools: `tl`
+-------------------
 
 Indices and tables
 ==================
