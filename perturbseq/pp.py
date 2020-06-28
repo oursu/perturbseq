@@ -3,6 +3,19 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
+def subsample_cells(adata,num_cells,grouping_variable):
+    import random
+    cells_keep=[]
+    groups=list(set(adata.obs[grouping_variable]))
+    for group in groups:
+        group_cells=list(adata.obs_names[adata.obs[grouping_variable]==group])
+        if len(group_cells)<num_cells:
+            print('warning: fewer cells than needed for '+group+'. skipping subsampling')
+        else:
+            group_cells=random.sample(group_cells,num_cells)
+        for cell in group_cells:
+            cells_keep.append(cell)
+    return(adata[cells_keep,:])
 
 def perturb2obs(adata_here,pref='perturb',copy=False):
     if pref+'.cell2guide' not in adata_here.obsm:
