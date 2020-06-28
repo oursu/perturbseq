@@ -32,7 +32,7 @@ needs_sphinx = '2.0'
 # ones.
 import sphinx_rtd_theme
 
-extensions = ['sphinx.ext.autodoc',"sphinx_rtd_theme"
+extensions = ['sphinx.ext.autodoc',"sphinx_rtd_theme",'sphinx.ext.autosummary'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

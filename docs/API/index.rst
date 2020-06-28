@@ -11,16 +11,27 @@ You can import perturbseq as::
    import perturbseq as perturb                                                                                            
 
 .. note::
-Testnote
+   Testnote
 
 Preprocessing: `pp`
 -------------------
 
-.. module:: perturb.pp
-.. currentmodule:: perturb
+.. module:: perturbseq.pp
+.. currentmodule:: perturbseq
 
 .. autosummary::
    :toctree: .
 
-   perturb.pp.cells_per_perturbation
+   pp.cells_per_perturbation
+
+Tools: `tl`
+-------------------
+
+.. module:: perturbseq.tl
+.. currentmodule:: perturbseq
+
+.. autosummary::
+   :toctree: .
+
+   tl.moi
 
