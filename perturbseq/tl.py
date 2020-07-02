@@ -3,6 +3,77 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
+def enriched_features(adata,f1='louvain',f2='batch',fdr=0.05,
+                      copy=False,add_min_pval=True,pval_correction='fdr_bh',ps=1e-10):
+    
+    if copy: adata=adata.copy()
+    
+    import scipy
+
+    f1s=list(set(adata.obs[f1]))
+    f2s=list(set(adata.obs[f2]))
+
+    oddsratios=np.zeros((len(f1s),len(f2s)))
+    pvals=np.zeros((len(f1s),len(f2s)))
+    proportions=np.zeros((len(f1s),len(f2s)))
+
+    for f1_idx in range(len(f1s)):
+        f1_here=f1s[f1_idx]
+        
+        cells_in_f1=list(adata.obs_names[adata.obs[f1]==f1_here])
+        
+        for f2_idx in range(len(f2s)):
+            f2_here=f2s[f2_idx]
+            cells_in_f2=list(adata.obs_names[adata.obs[f2]==f2_here])
+
+            total=list(adata.obs_names)
+            overlap=list(set(cells_in_f1).intersection(set(cells_in_f2)))
+            contingency_table=np.array([[len(overlap),
+                                         len(cells_in_f1)-len(overlap)],
+                                        [len(cells_in_f2)-len(overlap),
+                                         0]])
+            contingency_table[1,1]=len(total)-contingency_table[0,0]-contingency_table[1,0]-contingency_table[0,1]
+            oddsratio, pvalue = scipy.stats.fisher_exact(contingency_table)
+
+            if oddsratio==0.0:
+                oddsratios[f1_idx,f2_idx]=np.log2(ps)
+            else:
+                oddsratios[f1_idx,f2_idx]=np.log2(oddsratio) 
+            pvals[f1_idx,f2_idx]=pvalue 
+            proportion_cells_in_f1_from_f2=1.0*len(overlap)/len(cells_in_f1)
+            proportions[f1_idx,f2_idx]=proportion_cells_in_f1_from_f2
+
+    oddsratios_df=pd.DataFrame(oddsratios)
+    oddsratios_df.index=f1s
+    oddsratios_df.columns=f2s
+
+    pvals_df=pd.DataFrame(pvals)
+    pvals_df.index=f1s
+    pvals_df.columns=f2s
+    if add_min_pval:
+        min_pval=np.min(pvals[np.nonzero(pvals)])
+    else:
+        min_pval=0
+    #adjust pvals
+    from statsmodels.stats.multitest import multipletests
+    pvals_df=np.reshape(multipletests(np.array(pvals_df).flatten(),method=pval_correction)[1],
+                        pvals_df.shape)
+    pvals_df=-np.log10(pvals_df+min_pval)*np.sign(oddsratios_df)
+
+    proportions_df=pd.DataFrame(proportions)
+    proportions_df.index=f1s
+    proportions_df.columns=f2s
+
+    pref='enrich_'+f1+'_vs_'+f2
+    adata.uns[pref+'.oddsratios']=oddsratios_df
+    adata.uns[pref+'.p_adj.negLog10.signed']=pvals_df
+    adata.uns[pref+'.proportions']=proportions_df
+    
+    if copy:
+        return(adata)
+
+
+
 #this method taken from Dixit et al., 2016, https://github.com/asncd/MIMOSCA/blob/master/GBC_CBC_pairing/fit_moi.ipynb
 def moi(adata_here,pref='perturb',level='guide',gridsize=100,maxk=10):
     

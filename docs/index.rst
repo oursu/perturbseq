@@ -21,9 +21,15 @@ API
 
 Preprocessing: `pp`
 -------------------
+Cells per perturbation, etc.
 
 Tools: `tl`
 -------------------
+Tools
+
+Plotting: `pl`
+-------------------
+Plotting things.
 
 Indices and tables
 ==================

@@ -7,6 +7,33 @@ import matplotlib.pyplot as plt
 import copy
 import numpy as np
 
+def enriched_features(adata,f1,f2,fdr=None,x_or=5,x_p=20,**kwargs):
+    
+    pref='enrich_'+f1+'_vs_'+f2
+    
+    for item in ['.oddsratios','.p_adj.negLog10.signed']:
+        if pref+item not in adata.uns:
+            print("ERROR: result adata.uns['"+pref+item+"'] not found! \nPlease first run perturb.tl.enrich_features(adata,f1='"+f1+"',f2='"+f2+"')")
+            return
+    
+    import seaborn as sns
+    item='.oddsratios'
+    g=sns.clustermap(adata.uns[pref+item],
+                         vmin=-x_or,vmax=x_or,**kwargs)
+    plt.title('log2 odds ratio\n('+f1+' vs '+f2+')',loc='center')
+    ax = g.ax_heatmap
+    ax.set_ylabel(f1)
+    ax.set_xlabel(f2)
+
+    
+    item='.p_adj.negLog10.signed'
+    g=sns.clustermap(adata.uns[pref+item],
+                         vmin=-x_p,vmax=x_p,**kwargs)
+    plt.title('signed -log10(p adj)\n('+f1+' vs '+f2+')',loc='center')
+    ax = g.ax_heatmap
+    ax.set_ylabel(f1)
+    ax.set_xlabel(f2)
+
 def perturbations_per_cell(adata_here,vmin=0,vmax=5,ax=None,pref='perturb',level='guide',copy=False):
     if ax==None:
         fig,plots=plt.subplots(1)
