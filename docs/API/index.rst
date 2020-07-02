@@ -1,6 +1,3 @@
-.. module:: perturbseq
-.. automodule::perturbseq
-   :noindex:
 
 API
 ===
