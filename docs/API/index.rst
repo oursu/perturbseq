@@ -17,15 +17,13 @@ Preprocessing: `pp`
 -------------------
 
 .. module:: perturbseq.pp
-.. currentmodule:: perturbseq.pp
+.. currentmodule:: perturbseq
 
 .. autosummary::
    :toctree: .
 
-   perturbseq
-   perturbseq.pp
-   perturbseq.pp.subsample_cells
-   perturbseq.pp.cells_per_perturbation
+   pp.subsample_cells
+   pp.cells_per_perturbation
 
 Tools: `tl`
 -------------------
