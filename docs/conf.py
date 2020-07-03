@@ -17,7 +17,7 @@ import sys
 import warnings
 from pathlib import Path
 from datetime import datetime
-import perturbseq
+
 
 HERE=Path(__file__).parent
 on_rtd=os.environ.get('READTHEDOCS') == True
